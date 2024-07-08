@@ -1,0 +1,253 @@
+<html><head><base href="https://creative-factor-visualisation.math-app">
+<title>Factor Visualisation | Math App</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    header {
+        background-color: #4CAF50;
+        color: white;
+        text-align: center;
+        padding: 1em;
+    }
+    main {
+        display: flex;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2em;
+        flex-grow: 1;
+    }
+    .visualization {
+        flex: 2;
+        background-color: white;
+        border-radius: 8px;
+        padding: 1em;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .factor-list {
+        flex: 1;
+        background-color: white;
+        border-radius: 8px;
+        padding: 1em;
+        margin-left: 2em;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    canvas {
+        width: 100%;
+        height: 400px;
+        border: 1px solid #ddd;
+    }
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1em;
+    }
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 0.5em 1em;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    .input-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1em;
+    }
+    .input-group label {
+        margin-right: 1em;
+    }
+    .input-group input {
+        width: 100px;
+        padding: 0.5em;
+    }
+    .factor-notation {
+        margin-top: 1em;
+        font-weight: bold;
+    }
+    footer {
+        background-color: #333;
+        color: white;
+        text-align: center;
+        padding: 1em;
+        margin-top: auto;
+    }
+</style>
+</head>
+<body>
+    <header>
+        <h1>Factor Visualisation</h1>
+    </header>
+    <main>
+        <div class="visualization">
+            <h2>Dynamic Factor Model</h2>
+            <canvas id="factorCanvas"></canvas>
+            <div class="controls">
+                <div class="input-group">
+                    <label for="numberInput">Enter a number:</label>
+                    <input type="number" id="numberInput" min="1" value="12">
+                </div>
+                <button onclick="toggleVisualization()">Toggle Visualization</button>
+            </div>
+        </div>
+        <div class="factor-list">
+            <h2>Factors</h2>
+            <div id="factorEquations"></div>
+            <div id="factorNotation" class="factor-notation"></div>
+        </div>
+    </main>
+    <footer>
+        Made by Disruptiva Consulting-Developer: T.Faul
+    </footer>
+
+<script>
+const canvas = document.getElementById('factorCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 800;
+canvas.height = 400;
+
+let particles = [];
+let isExpanded = false;
+let globalAngle = 0;
+let currentNumber = 12;
+
+class Particle {
+    constructor(factor) {
+        this.factor = factor;
+        this.angle = Math.random() * Math.PI * 2;
+        this.radius = Math.random() * 50 + 50;
+        this.x = canvas.width / 2;
+        this.y = canvas.height / 2;
+        this.size = 15;
+        this.expandedSize = 40;
+        this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+        this.orbitSpeed = (Math.random() * 0.02 + 0.01) * (Math.random() < 0.5 ? 1 : -1);
+        this.pulseSpeed = Math.random() * 0.02 + 0.01;
+    }
+
+    update() {
+        if (!isExpanded) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            this.angle += this.orbitSpeed;
+            this.x = centerX + Math.cos(this.angle + globalAngle) * this.radius;
+            this.y = centerY + Math.sin(this.angle + globalAngle) * this.radius;
+            
+            this.size = 15 + Math.sin(Date.now() * this.pulseSpeed) * 3;
+        } else {
+            const angle = (Math.PI * 2) / particles.length * particles.indexOf(this);
+            const radius = 150;
+            this.x = canvas.width / 2 + Math.cos(angle) * radius;
+            this.y = canvas.height / 2 + Math.sin(angle) * radius;
+        }
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, isExpanded ? this.expandedSize : this.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = 'white';
+        ctx.font = isExpanded ? '20px Arial' : '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.factor, this.x, this.y);
+    }
+}
+
+function getFactors(number) {
+    const factors = [];
+    for (let i = 1; i <= number; i++) {
+        if (number % i === 0) {
+            factors.push(i);
+        }
+    }
+    return factors;
+}
+
+function init(number) {
+    particles = [];
+    currentNumber = number;
+    const factors = getFactors(number);
+    for (let factor of factors) {
+        particles.push(new Particle(factor));
+    }
+}
+
+function drawContainingCircle() {
+    if (!isExpanded) {
+        ctx.strokeStyle = '#4CAF50';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, 150, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#4CAF50';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(currentNumber.toString(), canvas.width / 2, canvas.height / 2);
+    }
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawContainingCircle();
+    globalAngle += 0.005;
+    for (let particle of particles) {
+        particle.update();
+        particle.draw();
+    }
+    requestAnimationFrame(animate);
+}
+
+function toggleVisualization() {
+    isExpanded = !isExpanded;
+}
+
+function updateFactorList(number) {
+    const factorEquations = document.getElementById('factorEquations');
+    factorEquations.innerHTML = '';
+    const factors = getFactors(number);
+    for (let i = 0; i < factors.length / 2; i++) {
+        const factor1 = factors[i];
+        const factor2 = number / factor1;
+        factorEquations.innerHTML += `<p>${factor1} × ${factor2} = ${number}</p>`;
+    }
+}
+
+function updateFactorNotation(number) {
+    const factorNotation = document.getElementById('factorNotation');
+    const factors = getFactors(number);
+    const notation = `F_${number}: ${factors.join(',')}`;
+    factorNotation.textContent = notation;
+}
+
+function visualizeFactors() {
+    const number = parseInt(document.getElementById('numberInput').value);
+    init(number);
+    updateFactorList(number);
+    updateFactorNotation(number);
+}
+
+init(12);
+animate();
+visualizeFactors();
+
+document.getElementById('numberInput').addEventListener('change', visualizeFactors);
+</script>
+
+</body></html>
